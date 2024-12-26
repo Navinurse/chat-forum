@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js"></script>
+</head>
+<body>
+  <h1>Simple Chat App</h1>
+  <div id="login">
+    <input id="email" type="text" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button id="loginButton">Login</button>
+    <button id="signupButton">Sign Up</button>
+  </div>
+  <div id="chat" style="display: none;">
+    <ul id="messages"></ul>
+    <input id="messageInput" placeholder="Type a message">
+    <button id="sendButton">Send</button>
+  </div>
+  <script>
+    // Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // User Authentication
+    const loginButton = document.getElementById('loginButton');
+    const signupButton = document.getElementById('signupButton');
+    loginButton.addEventListener('click', () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          document.getElementById('login').style.display = 'none';
+          document.getElementById('chat').style.display = 'block';
+        })
+        .catch(console.error);
+    });
+    signupButton.addEventListener('click', () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.createUserWithEmailAndPassword(email, password).catch(console.error);
+    });
+
+    // Chat Functionality
+    const sendButton = document.getElementById('sendButton');
+    const messageInput = document.getElementById('messageInput');
+    const messagesList = document.getElementById('messages');
+    const messagesRef = db.collection('messages');
+
+    // Send a Message
+    sendButton.addEventListener('click', () => {
+      const text = messageInput.value;
+      const user = auth.currentUser;
+      messagesRef.add({
+        text,
+        user: user.email,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      messageInput.value = '';
+    });
+
+    // Display Messages
+    messagesRef.orderBy('timestamp').onSnapshot(snapshot => {
+      messagesList.innerHTML = '';
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const li = document.createElement('li');
+        li.textContent = `${msg.user}: ${msg.text}`;
+        messagesList.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
